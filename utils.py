@@ -1,5 +1,11 @@
+
+###############################################################################
+# utils.py
+# Defines a few functions that are used in the ice model and in the Ensemble
+# Kalmand Filter codes. Interpolation, etc. 
+###############################################################################
+
 import numpy as np
-#from geostatistics import *
 
 # Sigmoid transformation for sea ice concentration
 # FWD converts concentration [0-1] to [-inf -> inf]
@@ -24,7 +30,6 @@ def distance_periodic(x,Lx):
     D = np.minimum(distance_1, distance_2)
     D = np.minimum(D, distance_3)
     return D
-
 
 def gen_covmatrix(d,r,s,type):
     # d must be a square matrix of distances between points
