@@ -1,4 +1,4 @@
-# ice_dynamcis_1d
+# sea_ice_model
 
 A one-dimensional sea ice dynamic-thermodynamic model based on Hibler's (1979) viscous-plastic formulation, implementing the implicit solution to the momentum equation described by Lemieux et al. (2008). The model is forced by a shallow water model. Ice grows as a function of the thickness and concentration.
 
