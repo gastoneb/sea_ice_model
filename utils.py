@@ -1,11 +1,38 @@
-
-###############################################################################
-# utils.py
-# Defines a few functions that are used in the ice model and in the Ensemble
-# Kalmand Filter codes. Interpolation, etc. 
-###############################################################################
+# A set of miscellaneous utility/plotting functions.
+# Graham Stonebridge
+# Department of Systems Design Engineering
+# University of Waterloo
+# 2015
 
 import numpy as np
+import matplotlib.pyplot as plt
+
+# delta_x (positive direction)
+def dxp(f,dx):
+    fx = (np.roll(f,-1) -f)/dx
+    return fx
+
+# delta_x (negative direction)
+def dxm(f,dx):
+    fx = (f - np.roll(f,1))/dx
+    return fx
+
+# average in x (positive direction)
+def axp(f):
+    afx = 0.5*(np.roll(f,-1) + f)
+    return afx
+
+# average in x (negative direction)
+def axm(f):
+    afx = 0.5*(f + np.roll(f,1))
+    return afx
+
+# Transport for a scalar located at the center of the C-grid (Forward Euler)
+def transport(var, u, v, dt, dx, source):
+    var_update = dt*(var/dt+(1/dx)*(u*(var+np.roll(var,-1))/2-np.roll(u,1)*
+                 (var+np.roll(var,1))/2)+source)
+    var_update = var + dxm(axp(var)*u,dx)*dt
+    return var_update
 
 # Sigmoid transformation for sea ice concentration
 # FWD converts concentration [0-1] to [-inf -> inf]
@@ -19,7 +46,7 @@ def sigmoid_bkwd(s):
     a = 1/(1+np.exp(-s))
     return a
 
-# return minimum distance between points on a periodic 1D grid
+# return minimum distance between a set of points on a periodic 1D grid
 def distance_periodic(x,Lx):
     nx = np.size(x)
     X = np.array([x[0,:],]*nx)
@@ -27,6 +54,17 @@ def distance_periodic(x,Lx):
     distance_1 = np.abs(X-X.T)
     distance_2 = np.abs(X+2*Lx-X.T)
     distance_3 = np.abs(X-2*Lx-X.T)
+    D = np.minimum(distance_1, distance_2)
+    D = np.minimum(D, distance_3)
+    return D
+
+# return minimum distances between two different vectors of points on a 1D periodic grid
+def distance_periodic_2(x1,x2,Lx):
+    X1 = np.repeat(x2,x1.size,axis=0)
+    X2 = np.repeat(x1,x2.size,axis=0)
+    distance_1 = np.abs(X1-X2.T)
+    distance_2 = np.abs(X1+2*Lx-X2.T)
+    distance_3 = np.abs(X1-2*Lx-X2.T)
     D = np.minimum(distance_1, distance_2)
     D = np.minimum(D, distance_3)
     return D
@@ -41,23 +79,24 @@ def gen_covmatrix(d,r,s,type):
     elif type == 'exponential':
         gamma = exponential_semivariogram(d,s,r,0)
     else:
-        'Oops, you selected an incorrect type of semivariogram'
+        'Invalid semivariogram selected'
     gamma_inf = np.ones((d.shape))*s
     Q = gamma_inf - gamma
     return Q
 
 # return a stationary random field with mean 0 following a given distribution
 def gen_SRF(Q):
+    # print(np.linalg.cond(Q))
     # Decompose the covariance matrix.
     try:
         L = np.linalg.cholesky(Q)
     except:
         try:
-#            print('Cholesky decomposition failed. Attempting regularization')
+            # print('Cholesky decomposition failed. Attempting regularization to decrease condition number. ')
             reg = np.eye(Q.shape[0])*1e-12
             L = np.linalg.cholesky(Q + reg)
         except:
-#            print('Regularized Cholesky decomposition failed. Trying SVD instead.')
+            # print('Cholesky decomposition failed. Regularization failed. Trying SVD instead. Probably not good.')
             U,S,V = np.linalg.svd(Q)
             L = U.dot(np.diag(np.sqrt(S)))
 
@@ -83,91 +122,83 @@ def gaussian_semivariogram(h,s,r,a):
     gamma[h==0] = 0
     return gamma
 
-def covariance(D, scale1, scale2):
-    # Given an array of distances and two arrays containing the scales of the observations,
-    # compute the semivariance at each pair of locations
-
-    # specify the sill, range and nugget (s,r,a)
-    if (scale1 == 1 and scale2 == 10) or (scale1 == 10 and scale2 == 1):
-        sm,rm,am = 0.0044, 10000, 0.0022
-    elif (scale1 == 30 and scale2 == 10) or (scale1 == 10 and scale2 == 30):
-        sm,rm,am = 0.00125, 50000, 0.0004
-    elif (scale1 == 30 and scale2 == 1) or (scale1 == 1 and scale2 == 30):
-        sm,rm,am = 0.0026, 50000, 0.0019
-    elif (scale1 == 1 and scale2 == 1):
-        sm,rm,am = 0.0098, 5000, 0.0
-    elif (scale1 == 10 and scale2 == 10):
-        sm,rm,am = 0.002, 30000, 0.0
-    elif (scale1 == 30 and scale2 == 30):
-        sm,rm,am = 0.0008, 60000, 0.0
-    elif (scale1 == 2 and scale2 == 2):
-        sm,rm,am = 0.007, 7000, 0.0
-    else:
-        print('error')
-
-    if hasattr(D,'__len__'):
-        shape = D.shape
-    else:
-        D = np.array([[D]])
-        shape = D.shape
-
-    gamma_m_h = gaussian_semivariogram(D,sm,rm,am)
-    gamma_m_inf = np.ones((shape))*sm
-    c_h = gamma_m_inf - gamma_m_h
-    return c_h
-
-# Determine simple cokriging weights
-def ordinary_kriging(x,xi,scale_background,scale_obs,Lx):
-    # Solve Aw=c where
-    # A: matrix of covariances of background state padded with 1's and a 0 at (N,N)
-    # w: kriging weights
-    # b: vector of crosscovariances between the observation and the background points
-
-    # Build A
-    nx = np.size(x)
-    X = np.array([x[0,:],]*nx)
-    distance_1 = np.abs(X-X.T)
-    distance_2 = np.abs(X+2*Lx-X.T)
-    distance_3 = np.abs(X-2*Lx-X.T)
-    # D=np.copy(distance_1)
-    D = np.minimum(distance_1, distance_2)
-    D = np.minimum(D, distance_3)
-    A = covariance(D, scale_background, scale_obs)
-
-    # Build c
-    distance_1 = np.abs(x-xi)
-    distance_2 = np.abs(x+2*Lx-xi)
-    distance_3 = np.abs(x-2*Lx-xi)
-    D = np.minimum(distance_1, distance_2)
-    D = np.minimum(D, distance_3)
-    # D=np.copy(distance_1)
-    c = covariance(D, scale_background, scale_obs).T
-
-    # Append Lagrange Multiplier
-    A = np.append(A,np.ones((np.size(x),1)),axis=1)
-    A = np.append(A,np.ones((1,np.size(x)+1)),axis=0)
-    A[np.size(x),np.size(x)] = 0
-    c = np.append(c,np.array([[1]]),axis=0)
-
-    # Solve equation
-    weights = np.linalg.solve(A,c)
-
-    # Remove Lagrange Multipliers
-    weights = weights[0:weights.size-1]
-    A = A[0:np.sqrt(A.size)-1,0:np.sqrt(A.size)-1]
-    c = c[0:c.size-1]
-    return weights, A, c
-
+# Return weights for linear interpolation
 def interpolate(z,x,xi,scale_obs,scale_background,Lx):
     m = np.average(z)
     weights, A, c = ordinary_cokriging(x,xi,scale_background, scale_obs, Lx)
     z_i = weights.T.dot(z.T)
     return z_i, np.squeeze(weights), A, np.squeeze(c)
 
-def plot_B():
-    B = np.load('B.npy')
-    B = B[0:600,0:600]
-    plt.imshow(B)
-    plt.clim((-0.05,0.15))
-    plt.colorbar()
-    plt.show()
+# Plotting functions:
+def figure_init(plot_bool):
+    if plot_bool:
+        plt.show(block=False)
+        plt.ion()
+
+def figure_update(plot_bool,uw,ua,u,a,h,t):
+    if plot_bool:
+        plt.clf()
+        plt.subplot(5,1,1)
+        plt.plot(uw.T,'-b',linewidth=2, label='Ocean velocity')
+        plt.tick_params(labelbottom="off")
+        plt.title('Ocean velocity (m/s)',y=0.7,x=0.85)
+        plt.ylim(-0.3,0.3)
+        plt.subplot(5,1,2)
+        plt.plot(ua.T*75,'-b',linewidth=2, label='Wind Velocity') #multiplied by a constant
+        plt.tick_params(labelbottom="off")
+        plt.title('Wind velocity (m/s)',y=0.7,x=0.85)
+        plt.ylim(-12,12)
+        plt.subplot(5,1,3)
+        plt.plot(u.T,'-r',linewidth=2, label='Ice velocity')
+        plt.tick_params(labelbottom="off")
+        plt.title('Ice Velocity (m/s)',y=0.7,x=0.85)
+#            plt.ylim([-0.3,0.3])
+        plt.subplot(5,1,4)
+        plt.plot(h.T,'-r', linewidth=2, label='Ice thickness')
+        plt.tick_params(labelbottom="off")
+        plt.title('Thickness (m)',y=0.7,x=0.85)
+        plt.subplot(5,1,5)
+        plt.plot(a.T,'-r', linewidth=2, label='Ice concentration')
+        plt.title('Concentration (0-1)',y=0.7,x=0.85)
+        plt.show(block=False)
+        plt.xlabel('Distance (km)')
+        plt.pause(0.0001)
+        # plt.savefig('img2/'+str(int(t))+'.png')
+        # plt.tight_layout()
+        plt.draw()
+
+def figure_update_oi(plot_bool,x,x_obs,uw,ua,u,u_t,a,a_t,h,h_t,h_obs,t):
+    if plot_bool:
+        plt.clf()
+        plt.subplot(5,1,1)
+        plt.plot(x,uw.T,'-b',linewidth=2, label='Ocean velocity')
+        plt.tick_params(labelbottom="off")
+        plt.title('Ocean velocity (m/s)',y=0.7,x=0.85)
+        plt.ylim(-0.3,0.3)
+        plt.subplot(5,1,2)
+        plt.plot(x,ua.T*75,'-b',linewidth=2, label='Wind Velocity') #multiplied by a constant
+        plt.tick_params(labelbottom="off")
+        plt.title('Wind velocity (m/s)',y=0.7,x=0.85)
+        plt.ylim(-12,12)
+        plt.subplot(5,1,3)
+        plt.plot(x,u.T,'-r',linewidth=1, label='Ice velocity')
+        plt.plot(x,u_t.T,'-g',linewidth=1, label='Ice velocity (truth)')
+        plt.tick_params(labelbottom="off")
+        plt.title('Ice Velocity (m/s)',y=0.7,x=0.85)
+#            plt.ylim([-0.3,0.3])
+        plt.subplot(5,1,4)
+        plt.plot(x,h.T,'-r', linewidth=1, label='Ice thickness')
+        plt.plot(x,h_t.T,'-g', linewidth=1, label='Ice thickness (truth)')
+        plt.plot(x_obs,h_obs.T,'.b', linewidth=1, label='Ice thickness (obs)')
+        plt.tick_params(labelbottom="off")
+        plt.title('Thickness (m)',y=0.7,x=0.85)
+        plt.subplot(5,1,5)
+        plt.plot(x,a.T,'-r', linewidth=1, label='Ice concentration')
+        plt.plot(x,a_t.T,'-g', linewidth=1, label='Ice concentration (truth)')
+        plt.title('Concentration (0-1)',y=0.7,x=0.85)
+        plt.show(block=False)
+        plt.xlabel('Distance (km)')
+        plt.pause(0.0001)
+        # plt.savefig('img2/'+str(int(t))+'.png')
+        # plt.tight_layout()
+        plt.draw()
