@@ -11,6 +11,7 @@
 # Import Libraries
 ###############################################################################
 
+from __future__ import print_function, division
 import numpy as np
 import matplotlib.pyplot as plt
 
@@ -27,14 +28,18 @@ from utils import *
 ###############################################################################
 def main():
     # Instantiate model classes
+    ocean_truth = Ocean()
     ocean = Ocean()
+    ocean.eta = np.copy(ocean_truth.eta)
+    atm_truth = Atmosphere()
     atm = Atmosphere()
+    atm.eta = np.copy(atm_truth.eta)
     ice_truth = Ice()
 
     # Read spin-up data as the starting point for the assimilation experiment.
-    ice_truth.u = np.load('u.npy')
-    ice_truth.h = np.load('h.npy')
-    ice_truth.a = np.load('a.npy')*0.9
+#    ice_truth.u = np.load('u.npy')
+#    ice_truth.h = np.load('h.npy')
+#    ice_truth.a = np.load('a.npy')*0.9
 
     # Instantiate the data assimilation class
     oi = OI()
@@ -63,10 +68,8 @@ def main():
     rmse_background = np.sqrt(np.mean((oi.x_b-oi.x_t)**2))
     rmse_analysis = np.sqrt(np.mean((oi.x_a-oi.x_t)**2))
 
-    # Some error covariance matrices for adding incrememntal errors to the thickness
-    # and concentration each time step.
-    Q_h = gen_covmatrix(oi.members[0].dist,10000,0.0001,"exponential")
-    Q_a = gen_covmatrix(oi.members[0].dist,10000,0.00001,"exponential")
+    # Set up the plots
+    figure_init(ice_truth.plot_bool)
 
     # March models forward in time
     t = oi.members[0].t0
@@ -83,30 +86,27 @@ def main():
         # March models forward in time
         if t % ocean.dt == 0:
             ocean.time_step()
+            ocean_truth.time_step()
         if t % atm.dt == 0:
             atm.time_step()
+            atm_truth.time_step()
         if t % oi.members[0].dt == 0:
             print('Ice time step at t = '+str(t/3600)+' hours')
-            e_h, e_h_t, e_a, e_a_t = gen_SRF(Q_h), gen_SRF(Q_h), gen_SRF(Q_a), gen_SRF(Q_a)
-            oi.members[0].h += e_h
-            oi.members[0].a += e_a
-            ice_truth.h += e_h_t
-            ice_truth.a += e_a_t
-            oi.members[0].time_step(ocean.u,atm.u)
-            ice_truth.time_step(ocean.u,atm.u)
+            oi.members[0].time_step(ocean.u, atm.u)
+            ice_truth.time_step(ocean_truth.u, atm_truth.u)
             oi.x_t = np.copy(ice_truth.h.T)
         if t % oi.dt == 0:
-            rmse_background = np.sqrt(np.mean((oi.x_b-oi.x_t)**2))
+            rmse_background = np.sqrt(np.mean((oi.x_b - oi.x_t)**2))
             print("RMSE: "+str(rmse_background))
             oi.x_b = np.copy(oi.members[0].h.T)
             oi.generate_observations()
             oi.analysis()
             oi.members[0].h = np.copy(oi.x_a.T)
-            rmse_background = np.sqrt(np.mean((oi.x_b-oi.x_t)**2))
+            rmse_background = np.sqrt(np.mean((oi.x_b - oi.x_t)**2))
             print("RMSE: "+str(rmse_background))
         if t % tp == 0:
-            figure_update_oi(oi.members[0].plot_bool,atm.grid,oi.grid_obs,ocean.u,atm.u,oi.members[0].u, ice_truth.u,oi.members[0].a, ice_truth.a,oi.members[0].h,ice_truth.h,oi.y.T,t)
-
+            figure_update_oi(oi.members[0].plot_bool,atm.grid,oi.grid_obs,ocean.u,ocean_truth.u,atm.u,atm_truth.u,\
+                    oi.members[0].u, ice_truth.u,oi.members[0].a, ice_truth.a,oi.members[0].h,ice_truth.h,oi.y.T,t)
         if t % (72*3600) == 0:
             print('restart atmosphere', t) # Periodically restart the SW models to prevent oscillations
             atm.restart()

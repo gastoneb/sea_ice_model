@@ -10,6 +10,7 @@
 # Import Libraries
 ###############################################################################
 
+from __future__ import division
 import numpy as np
 import matplotlib.pyplot as plt
 import scipy.sparse as sparse
@@ -36,7 +37,6 @@ class Model():
         self.tf = 3600*24*10 # model will run for 10 days
         self.tp = 3600
         self.t = np.copy(self.t0)
-        self.fig = plt.figure(figsize=(8,8))
         self.grid = np.linspace(-self.Lx,self.Lx-self.dx,self.Nx)
         self.dist = distance_periodic(self.grid.reshape((self.Nx,1)),self.Lx)
         self.plot_bool = True # Set to true for plots on the fly.

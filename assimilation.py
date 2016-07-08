@@ -8,9 +8,12 @@
 # Import Libraries
 ###############################################################################
 
+from __future__ import division, print_function 
 import numpy as np
 from world import Model
 from utils import *
+
+
 
 ###############################################################################
 # Data Assimilation Class (Optimal Interpolation)

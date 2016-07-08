@@ -134,6 +134,7 @@ def figure_init(plot_bool):
     if plot_bool:
         plt.show(block=False)
         plt.ion()
+        plt.figure(figsize=(8,8))
 
 def figure_update(plot_bool,uw,ua,u,a,h,t):
     if plot_bool:
@@ -167,16 +168,18 @@ def figure_update(plot_bool,uw,ua,u,a,h,t):
         # plt.tight_layout()
         plt.draw()
 
-def figure_update_oi(plot_bool,x,x_obs,uw,ua,u,u_t,a,a_t,h,h_t,h_obs,t):
+def figure_update_oi(plot_bool,x,x_obs,uw,uw_t,ua,ua_t,u,u_t,a,a_t,h,h_t,h_obs,t):
     if plot_bool:
         plt.clf()
         plt.subplot(5,1,1)
-        plt.plot(x,uw.T,'-b',linewidth=2, label='Ocean velocity')
+        plt.plot(x,uw.T,'-r',linewidth=1, label='Ocean velocity')
+        plt.plot(x, uw_t.T, '-g', linewidth=1, label = 'Ocean velocity (truth)')
         plt.tick_params(labelbottom="off")
         plt.title('Ocean velocity (m/s)',y=0.7,x=0.85)
         plt.ylim(-0.3,0.3)
         plt.subplot(5,1,2)
-        plt.plot(x,ua.T*75,'-b',linewidth=2, label='Wind Velocity') #multiplied by a constant
+        plt.plot(x,ua.T*75,'-r',linewidth=2, label='Wind Velocity') #multiplied by a constant
+        plt.plot(x,ua_t.T*75,'-g',linewidth=1, label='Wind Velocity (truth)') #multiplied by a constant
         plt.tick_params(labelbottom="off")
         plt.title('Wind velocity (m/s)',y=0.7,x=0.85)
         plt.ylim(-12,12)
