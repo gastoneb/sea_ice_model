@@ -111,6 +111,17 @@ def gen_SRF(Q):
     w = w - np.mean(w)
     return w
 
+# Use the fast fourier transform to generate a stationary markov random field. (In progress!)
+def gen_SRF_FFT(x,s,r):
+    d = x + np.amax(x)/2
+    c_x = -gaussian_semivariogram(x,s,r,0) + s
+    c_x_hat = np.fft.fft(c_x)
+
+    a = np.random.normal(0,1,x.size)
+    b = np.random.normal(0,1,x.size)
+    
+    return
+
 # exponential semivariogram
 def exponential_semivariogram(h,s,r,a):
     gamma = a+(s-a)*(1.-np.exp(-3*h/r))
