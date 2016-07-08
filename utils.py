@@ -96,9 +96,10 @@ def gen_SRF(Q):
             reg = np.eye(Q.shape[0])*1e-12
             L = np.linalg.cholesky(Q + reg)
         except:
-            # print('Cholesky decomposition failed. Regularization failed. Trying SVD instead. Probably not good.')
-            U,S,V = np.linalg.svd(Q)
-            L = U.dot(np.diag(np.sqrt(S)))
+            print('Cholesky decomposition failed. Regularization failed. The condition number is likely too high for\
+                    conventional approaches. Look into alternatives.')
+#            U,S,V = np.linalg.svd(Q)
+#            L = U.dot(np.diag(np.sqrt(S)))
 
     # Generate pseudorandom numbers
     v = np.random.normal(0,1,Q.shape[0])
