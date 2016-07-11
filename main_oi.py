@@ -30,10 +30,8 @@ def main():
     # Instantiate model classes
     ocean_truth = Ocean()
     ocean = Ocean()
-    ocean.eta = np.copy(ocean_truth.eta)
     atm_truth = Atmosphere()
     atm = Atmosphere()
-    atm.eta = np.copy(atm_truth.eta)
     ice_truth = Ice()
 
     # Read spin-up data as the starting point for the assimilation experiment.
@@ -50,9 +48,18 @@ def main():
     oi.members[0].growth_scaling = 0.2
     ice_truth.growth_scaling = 0.2
     ocean.length_scale = 100000
+    ocean_truth.length_scale = 100000
     ocean.time_scaling = 0.25
+    ocean_truth.time_scaling = 0.25
     atm.length_scale = 50000
+    atm_truth.length_scale = 50000
     atm.time_scaling = 0.25
+    atm_truth.time_scaling = 0.25
+    ocean.eta = np.copy(ocean_truth.eta)
+    atm.eta = np.copy(atm_truth.eta)
+
+    atm.eta += gen_srf_fft(atm.grid,atm.eta_error_variance,atm.length_scale,'gaussian')
+    ocean.eta += gen_srf_fft(ocean.grid,ocean.eta_error_variance,ocean.length_scale,'gaussian')
 
     # Instantiate an ice class, stored in OI, as the background state / forecast model
     oi.members.append(Ice())
@@ -62,7 +69,7 @@ def main():
     oi.build_H()
     oi.build_R()
     oi.build_B()
-    # oi.perturb_state()
+#    oi.perturb_state()
 
     # Some diagnostics you could use later.
     rmse_background = np.sqrt(np.mean((oi.x_b-oi.x_t)**2))
@@ -110,9 +117,15 @@ def main():
         if t % (72*3600) == 0:
             print('restart atmosphere', t) # Periodically restart the SW models to prevent oscillations
             atm.restart()
+            atm_truth.restart()
+            atm.eta = np.copy(atm_truth.eta)
+            atm.eta += gen_srf_fft(atm.grid,atm.eta_error_variance,atm.length_scale,'gaussian')
         if t % (120*3600) == 0:
             print('restart ocean', t) # Periodically restart the SW models to prevent oscillations
             ocean.restart()
+            ocean_truth.restart()
+            ocean.eta = np.copy(ocean_truth.eta)
+            ocean.eta += gen_srf_fft(ocean.grid,ocean.eta_error_variance,ocean.length_scale,'gaussian')
 
 ###############################################################################
 # Run the program

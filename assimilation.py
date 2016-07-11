@@ -66,7 +66,7 @@ class OI(Model):
             self.B = np.eye(self.Nx)*self.background_error_variance
         else:
             D = distance_periodic(self.grid_model,self.Lx)
-            self.B = gen_cov
+            self.B = gen_cov_matrix(self.dist, self.background_error_variance, self.background_error_decorrelation_length, "gaussian")
 
     # Generate the forward model / observation operator
     def build_H(self):
@@ -155,7 +155,8 @@ class OI(Model):
     # random correlated noise
     def perturb_state(self):
         print('Perturbing ensemble mean from true initial state')
-        perturbation = gen_SRF(self.B).reshape((self.Nx,1))
+#        perturbation = gen_SRF(self.B).reshape((self.Nx,1))
+        perturbation = gen_srf_fft(self.grid_model, self.background_error_variance, self.background_error_decorrelation_length,"gaussian" )
         if self.background_error_model == "additive":
             self.x_b[:] += perturbation
             self.members[0].h[:] = np.copy(self.x_b.T)

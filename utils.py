@@ -4,6 +4,8 @@
 # University of Waterloo
 # 2015
 
+
+from __future__ import division
 import numpy as np
 import matplotlib.pyplot as plt
 
@@ -97,7 +99,7 @@ def gen_SRF(Q):
             L = np.linalg.cholesky(Q + reg)
         except:
             print('Cholesky decomposition failed. Regularization failed. The condition number is likely too high for\
-                    conventional approaches. Look into alternatives.')
+                    conventional approaches. Use the FFT approach instead.')
 #            U,S,V = np.linalg.svd(Q)
 #            L = U.dot(np.diag(np.sqrt(S)))
 
@@ -112,15 +114,25 @@ def gen_SRF(Q):
     return w
 
 # Use the fast fourier transform to generate a stationary markov random field. (In progress!)
-def gen_SRF_FFT(x,s,r):
-    d = x + np.amax(x)/2
-    c_x = -gaussian_semivariogram(x,s,r,0) + s
-    c_x_hat = np.fft.fft(c_x)
+# Assumes that x goes from -Lx to +Lx-dx.
+def gen_srf_fft(x,s,r,shape):
+    d = - np.amin(x) - np.abs(x)
+    l = np.amax(x)*2
+
+    if shape == "gaussian":
+        c_x = -gaussian_semivariogram(d,s,r,0) + s
+    elif shape == "exponential":
+        c_x = -exponential_semivariogram(d,s,r,0) + s
+    else:
+        print("invalid semivariogram")
+    c_x_hat = np.fft.fft(c_x) + 0j
 
     a = np.random.normal(0,1,x.size)
     b = np.random.normal(0,1,x.size)
     
-    return
+    phi_hat = np.sqrt(1000.0*c_x_hat/2)*(a+b*1j)
+    phi = 2*np.real(np.fft.ifft(phi_hat))
+    return phi 
 
 # exponential semivariogram
 def exponential_semivariogram(h,s,r,a):

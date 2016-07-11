@@ -31,7 +31,6 @@ class Model():
         self.Ny = 1
         self.dx = 2*self.Lx/self.Nx
         self.dy = self.Ly/self.Ny
-        self.x = np.zeros((self.Ny,self.Nx))+np.linspace(-self.Lx/2,self.Lx/2-self.dx,self.Nx)
         self.f0 = 0.0
         self.t0 = 0
         self.tf = 3600*24*10 # model will run for 10 days
@@ -61,6 +60,7 @@ class Ocean(Model):
         self.length_scale = 100000
         self.eta_variance = 10
         self.eta = gen_SRF(gen_covmatrix(self.dist,self.length_scale,self.eta_variance,'gaussian'))
+        self.eta_error_variance = 2
         self.flux_prev1 = np.zeros((3,self.Nx))
         self.flux_prev2 = np.zeros((3,self.Nx))
         self.time_scaling = 0.25 #Slow down / speed up the dynamics
@@ -116,6 +116,7 @@ class Atmosphere(Model):
         self.method = self.flux_sw_ener
         self.length_scale = 50000
         self.eta_variance = 5
+        self.eta_error_variance = 2
         self.eta = gen_SRF(gen_covmatrix(self.dist,self.length_scale,self.eta_variance,'gaussian'))
         self.flux_prev1 = np.zeros((3,self.Nx))
         self.flux_prev2 = np.zeros((3,self.Nx))
