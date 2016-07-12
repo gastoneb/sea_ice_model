@@ -116,7 +116,9 @@ def gen_SRF(Q):
 # Use the fast fourier transform to generate a stationary markov random field. (In progress!)
 # Assumes that x goes from -Lx to +Lx-dx.
 def gen_srf_fft(x,s,r,shape):
+    d = -np.amin(x) + x
     d = - np.amin(x) - np.abs(x)
+
     l = np.amax(x)*2
 
     if shape == "gaussian":
@@ -125,13 +127,16 @@ def gen_srf_fft(x,s,r,shape):
         c_x = -exponential_semivariogram(d,s,r,0) + s
     else:
         print("invalid semivariogram")
-    c_x_hat = np.fft.fft(c_x) + 0j
+    c_x_hat = np.fft.fft(c_x) +0.0j
 
-    a = np.random.normal(0,1,x.size)
-    b = np.random.normal(0,1,x.size)
+    kernel = np.fft.ifft(np.fft.fft(c_x)**(-1))
+
+    a = np.random.normal(0,1,x.size) 
+    b = np.random.normal(0,1,x.size)*1.0j
     
-    phi_hat = np.sqrt(1000.0*c_x_hat/2)*(a+b*1j)
-    phi = 2*np.real(np.fft.ifft(phi_hat))
+#    phi_hat = np.sqrt(1000.0*c_x_hat/2)*(a+b*1j)
+#    phi = 2*np.real(np.fft.ifft(phi_hat))
+    phi = np.real(np.fft.ifft(np.sqrt(np.fft.fft(c_x))*(np.fft.fft(a+b))))
     return phi 
 
 # exponential semivariogram
