@@ -129,13 +129,9 @@ def gen_srf_fft(x,s,r,shape):
         print("invalid semivariogram")
     c_x_hat = np.fft.fft(c_x) +0.0j
 
-    kernel = np.fft.ifft(np.fft.fft(c_x)**(-1))
-
     a = np.random.normal(0,1,x.size) 
     b = np.random.normal(0,1,x.size)*1.0j
     
-#    phi_hat = np.sqrt(1000.0*c_x_hat/2)*(a+b*1j)
-#    phi = 2*np.real(np.fft.ifft(phi_hat))
     phi = np.real(np.fft.ifft(np.sqrt(np.fft.fft(c_x))*(np.fft.fft(a+b))))
     return phi 
 

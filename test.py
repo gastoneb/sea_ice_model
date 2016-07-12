@@ -10,7 +10,7 @@ dx=1000.
 x = np.arange(-lx,lx,dx)
 nx = x.size
 s =0.5 
-r = 1.#50000
+r = 50000
 phi = gen_srf_fft(x,s,r,"gaussian")
 print np.var(phi)
 plt.plot(phi)
