@@ -115,7 +115,7 @@ class Atmosphere(Model):
         self.dt = 1
         self.method = self.flux_sw_ener
         self.length_scale = 50000
-        self.eta_variance = 5
+        self.eta_variance = 1 
         self.eta_error_variance = 2
         self.eta = gen_SRF(gen_covmatrix(self.dist,self.length_scale,self.eta_variance,'gaussian'))
         self.flux_prev1 = np.zeros((3,self.Nx))

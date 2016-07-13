@@ -36,9 +36,9 @@ class OI(Model):
         self.x_t = np.zeros((self.Nx,1))
         self.grid_model = self.grid.reshape((self.Nx,1))
 
-        self.background_error_variance = 0.01
+        self.background_error_variance = 0.001
         self.background_error_model = 'additive'
-        self.background_error_decorrelation_length = 0
+        self.background_error_decorrelation_length = 100000
 
         # synthetic sensor details
         self.obs_resolution = 30000
@@ -66,7 +66,7 @@ class OI(Model):
             self.B = np.eye(self.Nx)*self.background_error_variance
         else:
             D = distance_periodic(self.grid_model,self.Lx)
-            self.B = gen_cov_matrix(self.dist, self.background_error_variance, self.background_error_decorrelation_length, "gaussian")
+            self.B = gen_covmatrix(D, self.background_error_decorrelation_length, self.background_error_variance, "gaussian")
 
     # Generate the forward model / observation operator
     def build_H(self):
@@ -154,9 +154,8 @@ class OI(Model):
     # Take the initialized ensemble members and perturb them by adding
     # random correlated noise
     def perturb_state(self):
-        print('Perturbing ensemble mean from true initial state')
 #        perturbation = gen_SRF(self.B).reshape((self.Nx,1))
-        perturbation = gen_srf_fft(self.grid_model, self.background_error_variance, self.background_error_decorrelation_length,"gaussian" )
+        perturbation = gen_srf_fft(self.grid_model.T, self.background_error_variance, self.background_error_decorrelation_length,"gaussian" ).T
         if self.background_error_model == "additive":
             self.x_b[:] += perturbation
             self.members[0].h[:] = np.copy(self.x_b.T)
@@ -166,3 +165,5 @@ class OI(Model):
             self.x_b = np.exp(logh)
         else:
             print("Invalid background error model selected")
+
+        return 

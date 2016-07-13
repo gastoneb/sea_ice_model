@@ -203,7 +203,7 @@ def figure_update_oi(plot_bool,x,x_obs,uw,uw_t,ua,ua_t,u,u_t,a,a_t,h,h_t,h_obs,t
         plt.title('Ocean velocity (m/s)',y=0.7,x=0.85)
         plt.ylim(-0.3,0.3)
         plt.subplot(5,1,2)
-        plt.plot(x,ua.T*75,'-r',linewidth=2, label='Wind Velocity') #multiplied by a constant
+        plt.plot(x,ua.T*75,'-r',linewidth=1, label='Wind Velocity') #multiplied by a constant
         plt.plot(x,ua_t.T*75,'-g',linewidth=1, label='Wind Velocity (truth)') #multiplied by a constant
         plt.tick_params(labelbottom="off")
         plt.title('Wind velocity (m/s)',y=0.7,x=0.85)

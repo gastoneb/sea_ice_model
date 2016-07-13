@@ -69,7 +69,8 @@ def main():
     oi.build_H()
     oi.build_R()
     oi.build_B()
-#    oi.perturb_state()
+    oi.perturb_state()
+    oi.members[0].h = np.copy(oi.x_b.T)
 
     # Some diagnostics you could use later.
     rmse_background = np.sqrt(np.mean((oi.x_b-oi.x_t)**2))
