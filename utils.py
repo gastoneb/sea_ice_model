@@ -4,6 +4,8 @@
 # University of Waterloo
 # 2015
 
+
+from __future__ import division
 import numpy as np
 import matplotlib.pyplot as plt
 
@@ -96,9 +98,10 @@ def gen_SRF(Q):
             reg = np.eye(Q.shape[0])*1e-12
             L = np.linalg.cholesky(Q + reg)
         except:
-            # print('Cholesky decomposition failed. Regularization failed. Trying SVD instead. Probably not good.')
-            U,S,V = np.linalg.svd(Q)
-            L = U.dot(np.diag(np.sqrt(S)))
+            print('Cholesky decomposition failed. Regularization failed. The condition number is likely too high for\
+                    conventional approaches. Use the FFT approach instead.')
+#            U,S,V = np.linalg.svd(Q)
+#            L = U.dot(np.diag(np.sqrt(S)))
 
     # Generate pseudorandom numbers
     v = np.random.normal(0,1,Q.shape[0])
@@ -109,6 +112,28 @@ def gen_SRF(Q):
     # Subtract mean
     w = w - np.mean(w)
     return w
+
+# Use the fast fourier transform to generate a stationary markov random field. (In progress!)
+# Assumes that x goes from -Lx to +Lx-dx.
+def gen_srf_fft(x,s,r,shape):
+    d = -np.amin(x) + x
+    d = - np.amin(x) - np.abs(x)
+
+    l = np.amax(x)*2
+
+    if shape == "gaussian":
+        c_x = -gaussian_semivariogram(d,s,r,0) + s
+    elif shape == "exponential":
+        c_x = -exponential_semivariogram(d,s,r,0) + s
+    else:
+        print("invalid semivariogram")
+    c_x_hat = np.fft.fft(c_x) +0.0j
+
+    a = np.random.normal(0,1,x.size) 
+    b = np.random.normal(0,1,x.size)*1.0j
+    
+    phi = np.real(np.fft.ifft(np.sqrt(np.fft.fft(c_x))*(np.fft.fft(a+b))))
+    return phi 
 
 # exponential semivariogram
 def exponential_semivariogram(h,s,r,a):
@@ -134,6 +159,7 @@ def figure_init(plot_bool):
     if plot_bool:
         plt.show(block=False)
         plt.ion()
+        plt.figure(figsize=(8,8))
 
 def figure_update(plot_bool,uw,ua,u,a,h,t):
     if plot_bool:
@@ -167,16 +193,18 @@ def figure_update(plot_bool,uw,ua,u,a,h,t):
         # plt.tight_layout()
         plt.draw()
 
-def figure_update_oi(plot_bool,x,x_obs,uw,ua,u,u_t,a,a_t,h,h_t,h_obs,t):
+def figure_update_oi(plot_bool,x,x_obs,uw,uw_t,ua,ua_t,u,u_t,a,a_t,h,h_t,h_obs,t):
     if plot_bool:
         plt.clf()
         plt.subplot(5,1,1)
-        plt.plot(x,uw.T,'-b',linewidth=2, label='Ocean velocity')
+        plt.plot(x,uw.T,'-r',linewidth=1, label='Ocean velocity')
+        plt.plot(x, uw_t.T, '-g', linewidth=1, label = 'Ocean velocity (truth)')
         plt.tick_params(labelbottom="off")
         plt.title('Ocean velocity (m/s)',y=0.7,x=0.85)
         plt.ylim(-0.3,0.3)
         plt.subplot(5,1,2)
-        plt.plot(x,ua.T*75,'-b',linewidth=2, label='Wind Velocity') #multiplied by a constant
+        plt.plot(x,ua.T*75,'-r',linewidth=1, label='Wind Velocity') #multiplied by a constant
+        plt.plot(x,ua_t.T*75,'-g',linewidth=1, label='Wind Velocity (truth)') #multiplied by a constant
         plt.tick_params(labelbottom="off")
         plt.title('Wind velocity (m/s)',y=0.7,x=0.85)
         plt.ylim(-12,12)

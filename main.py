@@ -32,8 +32,8 @@ def main():
 
     # You can define the initial conditions here if you have a saved state
     # ice.u = np.load('u.npy')
-    ice.h = np.load('h.npy')
-    ice.a = np.load('a.npy')
+#    ice.h = np.load('h.npy')
+#    ice.a = np.load('a.npy')
 
     # Change some parameters
     ice.growth_scaling = 1.0 #0.05
