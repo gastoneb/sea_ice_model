@@ -79,7 +79,7 @@ def main():
             figure_update(ice.plot_bool,ocean.u,atm.u,ice.u,ice.a,ice.h,t)
         if t % (24*3600) == 0:
              ice.growth_scaling = np.random.uniform(-0.2,0.2)
-             print("ice scaling set to "+str(ice.growth_scaling))
+             print("ice growth scaling set to "+str(ice.growth_scaling))
         if t % (15*24*3600) == 0:
             print('restart atmosphere', t) # Periodically restart the SW models to prevent oscillations
             atm.restart()
