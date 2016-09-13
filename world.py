@@ -33,7 +33,7 @@ class Model():
         self.dy = self.Ly/self.Ny
         self.f0 = 0.0
         self.t0 = 0
-        self.tf = 3600*24*10 # model will run for 10 days
+        self.tf = 3600*24*30 # model will run for 10 days
         self.tp = 3600
         self.t = np.copy(self.t0)
         self.grid = np.linspace(-self.Lx,self.Lx-self.dx,self.Nx)
