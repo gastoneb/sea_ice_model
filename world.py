@@ -275,7 +275,7 @@ class Ice(Model):
 
     # March solution forward one time step
     def time_step(self,uw,u_atm):
-        ua = u_atm*75 #Multiply the wind velocity by some factor that makes it realistic.
+        ua = u_atm*150 #Multiply the wind velocity by some factor that makes it realistic.
         # Outer Loop
         uprev = np.copy(self.u)
         for i in range(0,self.n_outer_loops):

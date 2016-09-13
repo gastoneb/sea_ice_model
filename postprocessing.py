@@ -50,9 +50,23 @@ plt.show()
 # Compute temporal autocorrelation of ice velocity
 import statsmodels.graphics.tsaplots as tsaplots
 daily_10km_ui = daily_average(ui_10km)
-plt.imshow(daily_10km_ui)
-plt.show()
 ui_acf = tsaplots.plot_acf(daily_10km_ui[:,1], lags=20)
-
+plt.xlabel("Time lag (days)")
+plt.ylabel("Autocorrelation")
+plt.title("")
 plt.show()
+
+# Compute histogram of wind and ocean current velocities
+wind = np.ravel(ua*75)
+[hist,bin_edges] = np.histogram(wind,nbins)
+bin_centres = 0.5*(bin_edges[0:nbins]+bin_edges[1:nbins+1])
+plt.plot(bin_centres,hist/np.sum(hist))
+plt.yscale('log')
+plt.ylim([0.0001,0.1])
+plt.xlabel("Wind velocity (m/s)")
+plt.ylabel("Frequency")
+plt.show()
+
+
+# Compute histogram of ice velocity
 
