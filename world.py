@@ -33,7 +33,7 @@ class Model():
         self.dy = self.Ly/self.Ny
         self.f0 = 0.0
         self.t0 = 0
-        self.tf = 3600*24*30 # model will run for 10 days
+        self.tf = 3600*24*30 
         self.tp = 3600
         self.t = np.copy(self.t0)
         self.grid = np.linspace(-self.Lx,self.Lx-self.dx,self.Nx)
@@ -59,7 +59,8 @@ class Ocean(Model):
         self.method = self.flux_sw_ener
         self.length_scale = 100000
         self.eta_variance = 10
-        self.eta = gen_SRF(gen_covmatrix(self.dist,self.length_scale,self.eta_variance,'gaussian'))
+        self.distribution = 'gaussian'
+        self.eta = gen_SRF(gen_covmatrix(self.dist,self.length_scale,self.eta_variance,self.distribution))
         self.eta_error_variance = 2
         self.flux_prev1 = np.zeros((3,self.Nx))
         self.flux_prev2 = np.zeros((3,self.Nx))
@@ -218,7 +219,8 @@ class Ice(Model):
         xprev = np.ravel(uprev)
         # Can use any sparse solver in np.linalg but directly solving the system of
         # equations turns out to be the fastest.
-        x = sparse.linalg.spsolve(A,b)
+#        x = sparse.linalg.spsolve(A,b)
+        [x,junk] = sparse.linalg.cg(A,b,xprev,maxiter=500)
         self.u = np.reshape(x[0:self.Nx*self.Ny],(self.Ny,self.Nx))
 
     # Compute eta and zeta
