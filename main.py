@@ -31,9 +31,9 @@ def main():
     figure_init(ice.plot_bool)
 
     # You can define the initial conditions here if you have a saved state
-    ice.u = np.load('results/u.npy')
-    ice.h = np.load('results/h.npy')
-    ice.a = np.load('results/a.npy')
+    ice.u = np.load('u.npy')
+    ice.h = np.load('h.npy')
+    ice.a = np.load('a.npy')*0.9
 
     # Want to save hourly state
     u_hist = np.copy(ice.u)
@@ -44,11 +44,14 @@ def main():
 
 
     # Change some parameters
-    ice.growth_scaling = 0.5
-    ocean.length_scale = 100000
+    ice.growth_scaling = 0.225
+    ocean.length_scale = 10000
     ocean.time_scaling = 0.1
-    atm.length_scale = 50000
+    atm.length_scale = 10000
     atm.time_scaling = 0.1
+    ice.tf = 24*3600*30
+    ocean.restart()
+    atm.restart()
 
     # March models forward in time
     t = ice.t0
@@ -79,7 +82,7 @@ def main():
             figure_update(ice.plot_bool,ocean.u,atm.u,ice.u,ice.a,ice.h,t)
         if t % (24*3600) == 0:
 #             ice.growth_scaling = np.random.uniform(-0.2,0.5)
-             ice.growth_scaling = np.random.uniform(0.5,0.9)
+             ice.growth_scaling = np.random.uniform(-0.2,0.2)
              print("ice growth scaling set to "+str(ice.growth_scaling))
 #        if t % (15*24*3600) == 0:
 #            print('restart atmosphere', t) # Periodically restart the SW models to prevent oscillations
@@ -89,14 +92,14 @@ def main():
 #            ocean.restart()
 
     # Save state to file.
-    np.save('u.npy', ice.u)
-    np.save('a.npy', ice.a)
-    np.save('h.npy', ice.h)
-#    np.save('results/u_hist.npy', u_hist)
-#    np.save('results/uw_hist.npy', uw_hist)
-#    np.save('results/ua_hist.npy', ua_hist)
-#    np.save('results/a_hist.npy', a_hist)
-#    np.save('results/h_hist.npy', h_hist)
+    np.save('results/u.npy', ice.u)
+    np.save('results/a.npy', ice.a)
+    np.save('results/h.npy', ice.h)
+    np.save('results/u_hist.npy', u_hist)
+    np.save('results/uw_hist.npy', uw_hist)
+    np.save('results/ua_hist.npy', ua_hist)
+    np.save('results/a_hist.npy', a_hist)
+    np.save('results/h_hist.npy', h_hist)
 
 
 ###############################################################################

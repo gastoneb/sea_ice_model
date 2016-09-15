@@ -30,6 +30,34 @@ uo = np.load("results/uw_hist.npy")
 h = np.load("results/h_hist.npy")
 a = np.load("results/a_hist.npy")
 
+
+# Plot the state at an intermediate timestep. 
+t=1000
+plt.subplot(5,1,1)
+plt.plot(uo[t,:].T,'-b',linewidth=2, label='Ocean velocity')
+plt.tick_params(labelbottom="off")
+plt.subplot(5,1,1).set_title('Ocean velocity (m/s)')#,y=0.69,x=0.8,backgroundcolor="white")
+plt.ylim(-0.3,0.3)
+plt.subplot(5,1,2).set_title("Wind velocity (m/s)")
+plt.plot(ua[t,:].T*75,'-b',linewidth=2, label='Wind Velocity') #multiplied by a constant
+plt.tick_params(labelbottom="off")
+#plt.title('Wind velocity (m/s)',y=0.7,x=0.8)
+plt.ylim(-12,12)
+plt.subplot(5,1,3).set_title('Ice velocity (m/s)')
+plt.plot(ui[t,:].T,'-r',linewidth=2, label='Ice velocity')
+plt.tick_params(labelbottom="off")
+plt.ylim([-0.025,0.025])
+plt.subplot(5,1,4).set_title("Thickness (m)")
+plt.plot(h[t,:].T,'-r', linewidth=2, label='Ice thickness')
+plt.tick_params(labelbottom="off")
+plt.subplot(5,1,5).set_title("Ice concentration (0-1)")
+plt.plot(a[t,:].T,'-r', linewidth=2, label='Ice concentration')
+plt.show(block=False)
+plt.xlabel('Distance (km)')
+plt.tight_layout()
+plt.show()
+
+
 # Compute the histogram of absolute divergence, du/dx (1/day) on a 10km grid
 nbins=50
 ui_10km = change_length_scale(ui,10)
@@ -49,13 +77,15 @@ plt.plot(bin_centres,hist)
 plt.xscale('log')
 plt.yscale('log')
 plt.xlim([10**(-2),10])
+plt.ylim([10**1,10**5])
 plt.xlabel("Divergence Rate (1/day)")
 plt.ylabel("Frequency")
+plt.grid(which='major')
 plt.tight_layout()
 plt.show()
 
 # Compute temporal autocorrelation of ice velocity
-#import statsmodels.graphics.tsaplots as tsaplots
+import statsmodels.graphics.tsaplots as tsaplots
 daily_10km_ui = change_time_scale(ui_10km,24)
 #ui_acf = tsaplots.plot_acf(daily_10km_ui[:,1], lags=20)
 import statsmodels.tsa.stattools as stattools
@@ -64,12 +94,17 @@ acf = acf*0
 for i in range(0,100):
     acf_i = stattools.acf(daily_10km_ui[:,i])
     acf += acf_i/100
+plt.clf()
 plt.plot(acf)
 plt.scatter(np.arange(acf.size),acf)
 plt.axhline(y=0, color='black')
 plt.xlabel("Time lag (days)")
 plt.ylabel("Autocorrelation")
+plt.xlim([0,30])
+plt.ylim([-0.4,1.0])
 plt.title("")
+plt.grid(which="major")
+plt.tight_layout()
 plt.show()
 
 # Compute histogram of wind and ocean current velocities
@@ -81,6 +116,7 @@ plt.yscale('log')
 plt.ylim([0.0001,0.1])
 plt.xlabel("Wind velocity (m/s)")
 plt.ylabel("Frequency")
+plt.grid(which="major")
 plt.show()
 
 
@@ -96,14 +132,25 @@ bin_centres = 0.5*(bin_edges[0:nbins]+bin_edges[1:nbins+1])
 plt.plot(bin_centres,hist/np.sum(hist))
 plt.yscale('log')
 plt.ylim([1/1e4,1])
+plt.xlim([-6,6])
 plt.xlabel("u/std(u)")
 plt.ylabel("Frequency")
+plt.grid(which="major")
 plt.show()
 
 
 
 # Create spatial ACF of ice thickness
-tsaplots.plot_acf(h[h.shape[0]-1,:],lags=300)
+#tsaplots.plot_acf(h[h.shape[0]-1,:],lags=300)
+acf = stattools.acf(h[0,:],nlags=300)*0
+for i in range(0,1300):
+    acf_i = stattools.acf(h[i,:],nlags=300)
+    acf += acf_i/1300
+plt.plot(acf)
 plt.xlabel("Distance Lag (km)")
 plt.ylabel("Autocorrelation")
+plt.grid(which="major")
+plt.xlim([0,300])
+plt.axhline(y=0, color='black')
+plt.ylim([-0.3,1])
 plt.show()

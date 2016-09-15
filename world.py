@@ -177,7 +177,7 @@ class Ice(Model):
         self.e = 2
         self.Cw = 0.0055
         self.Ca = 0.0012
-        self.Ps = 5000
+        self.Ps = 1500
         self.C = 20
         self.eta = np.zeros((self.Ny,self.Nx))
         self.zeta = np.zeros((self.Ny,self.Nx))
@@ -199,12 +199,13 @@ class Ice(Model):
 
     # Construct A matrix of Ax=b
     def build_A(self,uw,ua,uprev):
+        visc = self.zeta*(1+self.e**(-2))
         # Compute coeffcients of A
-        cu1 = 1/(self.dx**2)*(self.zeta)
-        cu2 = (-1/(self.dx)**2*(np.roll(self.zeta,-1)+self.zeta)-
+        cu1 = 1/(self.dx**2)*(visc)
+        cu2 = (-1/(self.dx)**2*(np.roll(visc,-1)+visc)-
                 self.rhoi/2/self.dt*(np.roll(self.a*self.h,-1)+self.a*self.h)-
                 self.rhow*self.Cw/2*(self.a+np.roll(self.a,-1))*np.absolute(uw-uprev))
-        cu3 = 1/(self.dx**2)*(np.roll(self.zeta,-1))
+        cu3 = 1/(self.dx**2)*(np.roll(visc,-1))
 
         A = sparse.spdiags(np.vstack((np.roll(np.ravel(cu1).T,-1),np.ravel(cu2).T,np.roll(np.ravel(cu3).T,1))),[-1,0,1],self.Nx*self.Ny,self.Nx*self.Ny).todok()
         A[self.Nx*self.Ny-1,0]=cu1[0,0]
