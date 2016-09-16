@@ -23,6 +23,12 @@ def change_time_scale(x,n_half_hrs):
         result += xi2[:p,:]
     return result/n
 
+font = {'family' : 'normal',
+        'weight' : 'normal',
+        'size'   : 14}
+
+plt.rc('font', **font)
+
 # Load the model state histories
 ui = np.load("results/u_hist.npy")
 ua = np.load("results/ua_hist.npy")
@@ -108,6 +114,18 @@ plt.tight_layout()
 plt.show()
 
 # Compute histogram of wind and ocean current velocities
+ocean = np.ravel(uo)
+[hist,bin_edges] = np.histogram(ocean,nbins)
+bin_centres = 0.5*(bin_edges[0:nbins]+bin_edges[1:nbins+1])
+plt.plot(bin_centres,hist/np.sum(hist))
+plt.yscale('log')
+plt.ylim([0.0001,0.1])
+plt.xlim([-0.3,0.3])
+plt.xlabel("Ocean velocity (m/s)")
+plt.ylabel("Frequency")
+plt.grid(which="major")
+plt.show()
+# Compute histogram of wind and ocean current velocities
 wind = np.ravel(ua*150)
 [hist,bin_edges] = np.histogram(wind,nbins)
 bin_centres = 0.5*(bin_edges[0:nbins]+bin_edges[1:nbins+1])
@@ -123,17 +141,17 @@ plt.show()
 # Compute histogram of ice velocity fluctuations, u/stdev(u)
 stdev_u = ui_10km.std(axis=0)
 fluctuation = np.copy(ui_10km)
-for i in range(0,fluctuation.shape[1]):
-    fluctuation[:,i] /= stdev_u[i]
+#for i in range(0,fluctuation.shape[1]):
+#    fluctuation[:,i] /= stdev_u[i]
 
 fluctuation = np.ravel(fluctuation)
 [hist,bin_edges] = np.histogram(fluctuation,nbins)
 bin_centres = 0.5*(bin_edges[0:nbins]+bin_edges[1:nbins+1])
 plt.plot(bin_centres,hist/np.sum(hist))
 plt.yscale('log')
-plt.ylim([1/1e4,1])
-plt.xlim([-6,6])
-plt.xlabel("u/std(u)")
+plt.ylim([0.00001,1])
+#plt.xlim([-6,6])
+plt.xlabel("Sea ice velocity fluctuation (m/s)")
 plt.ylabel("Frequency")
 plt.grid(which="major")
 plt.show()
