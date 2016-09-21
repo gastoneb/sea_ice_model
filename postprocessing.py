@@ -13,7 +13,9 @@ def change_length_scale(x,n):
     return result
 
 # go from 30 minute timesteps to  daily averages. Only for 30 days.
-def change_time_scale(x,n_half_hrs):
+#def change_time_scale(x,n_half_hrs):
+def change_time_scale(x,delt, delt_new)   :
+    
     n = n_half_hrs*2
     p = int(30*24*2/n)
     result = np.zeros([p,x.shape[1]])

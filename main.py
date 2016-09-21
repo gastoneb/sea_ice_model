@@ -32,7 +32,7 @@ def main():
 
     # You can define the initial conditions here if you have a saved state
     ice.u = np.load('u.npy')
-    ice.h = np.load('h.npy')
+    ice.h = np.load('h.npy')*0.3
     ice.a = np.load('a.npy')*0.9
 
     # Want to save hourly state
@@ -42,11 +42,11 @@ def main():
     a_hist = np.copy(ice.a)
     h_hist = np.copy(ice.h)
 
-
+    print(ice.dx)
     # Change some parameters
     ice.growth_scaling = 0.225
     ocean.length_scale = 10000
-    ocean.time_scaling = 0.1
+    ocean.time_scaling = 0.05
     atm.length_scale = 10000
     atm.time_scaling = 0.1
     ice.tf = 24*3600*30
@@ -81,8 +81,8 @@ def main():
         if t % tp ==0:
             figure_update(ice.plot_bool,ocean.u,atm.u,ice.u,ice.a,ice.h,t)
         if t % (24*3600) == 0:
-#             ice.growth_scaling = np.random.uniform(-0.2,0.5)
-             ice.growth_scaling = np.random.uniform(-0.2,0.2)
+             ice.growth_scaling = np.random.uniform(-0.2,0.5)
+#             ice.growth_scaling = np.random.uniform(-0.2,0.2)
              print("ice growth scaling set to "+str(ice.growth_scaling))
 #        if t % (15*24*3600) == 0:
 #            print('restart atmosphere', t) # Periodically restart the SW models to prevent oscillations

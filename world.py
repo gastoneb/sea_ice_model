@@ -167,7 +167,7 @@ class Ice(Model):
     def __init__(self):
         Model.__init__(self)
         print("Instantiating Ice Class")
-        self.dt = 3600*0.5
+        self.dt = 3600*0.1
         # Initial conditions
         self.u = np.zeros((self.Ny,self.Nx))
         self.v = np.zeros((self.Ny,self.Nx))
@@ -175,9 +175,9 @@ class Ice(Model):
         self.h = np.ones((self.Ny,self.Nx))*0.1
         # Parameters
         self.e = 2
-        self.Cw = 0.0055
-        self.Ca = 0.0012
-        self.Ps = 1500
+        self.Cw = 0.0055*1.0
+        self.Ca = 0.0012*5
+        self.Ps = 5000
         self.C = 20
         self.eta = np.zeros((self.Ny,self.Nx))
         self.zeta = np.zeros((self.Ny,self.Nx))
@@ -214,26 +214,27 @@ class Ice(Model):
 
     # Solve for x in Ax=b after setting up equations
     def solve_momentum_equations(self,uw,ua,uprev):
-        self.update_viscosities()
+        self.update_viscosities(uprev)
         b = self.build_b(uw,ua,uprev).T
         A = self.build_A(uw,ua,uprev)
         xprev = np.ravel(uprev)
         # Can use any sparse solver in np.linalg but directly solving the system of
         # equations turns out to be the fastest.
-#        x = sparse.linalg.spsolve(A,b)
-        [x,junk] = sparse.linalg.cg(A,b,xprev,maxiter=500)
+        x = sparse.linalg.spsolve(A,b)
+#        [x,junk] = sparse.linalg.cg(A,b,xprev,maxiter=500)
         self.u = np.reshape(x[0:self.Nx*self.Ny],(self.Ny,self.Nx))
 
     # Compute eta and zeta
-    def update_viscosities(self):
+    def update_viscosities(self,uprev):
         P = self.Ps*self.h*np.exp(-self.C*(1-self.a))
-        Delta = np.sqrt(((self.u-np.roll(self.u,1))/self.dx)**2*(1+self.e**(-2)))+1e-32
+        Delta = np.sqrt(((uprev-np.roll(uprev,1))/self.dx)**2*(1+self.e**(-2)))+1/1e20
         self.zeta = P/(2*Delta)
         # upper and lower bounds on viscosity
-        maxzeta=(P/4)*10**9
+        maxzeta=2.5*P*10**8
         minzeta=4*10**8
         self.zeta[self.zeta<minzeta] = minzeta
         self.zeta[self.zeta>maxzeta] = maxzeta[self.zeta>maxzeta]
+#        self.zeta = maxzeta*np.tanh(P/2/Delta/maxzeta)
 
       # Correct a and h for non-physical values
     def redistribution(self):
@@ -283,8 +284,8 @@ class Ice(Model):
         uprev = np.copy(self.u)
         for i in range(0,self.n_outer_loops):
             # Inner Iterations
-            self.solve_momentum_equations(uw,ua,uprev)
             uprev = (self.u+uprev)/2
+            self.solve_momentum_equations(uw,ua,uprev)
         self.uprev = np.copy(self.u)
 
         # Compute thermodynamic growth/melt source terms
