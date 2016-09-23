@@ -176,7 +176,7 @@ class Ice(Model):
         # Parameters
         self.e = 2
         self.Cw = 0.0055*1.0
-        self.Ca = 0.0012*5
+        self.Ca = 0.0012*1.0
         self.Ps = 5000
         self.C = 20
         self.eta = np.zeros((self.Ny,self.Nx))

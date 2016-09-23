@@ -16,8 +16,8 @@ def change_length_scale(x,n):
 #def change_time_scale(x,n_half_hrs):
 def change_time_scale(x,delt, delt_new)   :
     
-    n = n_half_hrs*2
-    p = int(30*24*2/n)
+    n = int(delt_new/delt)
+    p = 30
     result = np.zeros([p,x.shape[1]])
     for i in range(1,n):
         xi = np.roll(x,i,0)
@@ -39,6 +39,12 @@ h = np.load("results/h_hist.npy")
 a = np.load("results/a_hist.npy")
 
 
+# Histogram of ice thickness
+plt.hist(np.ravel(h),10,normed=True)
+plt.ylabel("Frequency")
+plt.xlabel("Thickness (m)")
+plt.show()
+
 # Plot the state at an intermediate timestep. 
 t=1000
 plt.subplot(5,1,1)
@@ -54,7 +60,7 @@ plt.ylim(-12,12)
 plt.subplot(5,1,3).set_title('Ice velocity (m/s)')
 plt.plot(ui[t,:].T,'-r',linewidth=2, label='Ice velocity')
 plt.tick_params(labelbottom="off")
-plt.ylim([-0.025,0.025])
+#plt.ylim([-0.025,0.025])
 plt.subplot(5,1,4).set_title("Thickness (m)")
 plt.plot(h[t,:].T,'-r', linewidth=2, label='Ice thickness')
 plt.tick_params(labelbottom="off")
@@ -94,7 +100,7 @@ plt.show()
 
 # Compute temporal autocorrelation of ice velocity
 import statsmodels.graphics.tsaplots as tsaplots
-daily_10km_ui = change_time_scale(ui_10km,24)
+daily_10km_ui = change_time_scale(ui_10km,0.1,24)
 #ui_acf = tsaplots.plot_acf(daily_10km_ui[:,1], lags=20)
 import statsmodels.tsa.stattools as stattools
 acf=stattools.acf(daily_10km_ui[:,0])
@@ -174,3 +180,6 @@ plt.xlim([0,300])
 plt.axhline(y=0, color='black')
 plt.ylim([-0.3,1])
 plt.show()
+
+
+
