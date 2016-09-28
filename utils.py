@@ -80,6 +80,9 @@ def gen_covmatrix(d,r,s,type):
         gamma = gaussian_semivariogram(d,s,r,0)
     elif type == 'exponential':
         gamma = exponential_semivariogram(d,s,r,0)
+    elif type == 'linear':
+        gamma = linear_semivariogram(d,s,np.amax(d),0)
+        print( gamma.T)
     else:
         'Invalid semivariogram selected'
     gamma_inf = np.ones((d.shape))*s
@@ -125,6 +128,8 @@ def gen_srf_fft(x,s,r,shape):
         c_x = -gaussian_semivariogram(d,s,r,0) + s
     elif shape == "exponential":
         c_x = -exponential_semivariogram(d,s,r,0) + s
+    elif shape == "linear":
+        c_x = -linear_semivariogram(d,s,np.amax(d),0) + s
     else:
         print("invalid semivariogram")
     c_x_hat = np.fft.fft(c_x) +0.0j
@@ -144,6 +149,12 @@ def exponential_semivariogram(h,s,r,a):
 # gaussian semivariogram
 def gaussian_semivariogram(h,s,r,a):
     gamma = a + (s-a)*(1.-np.exp(-3*h**2/r**2))
+    gamma[h==0] = 0
+    return gamma
+
+def linear_semivariogram(h,s,r,a):
+    slope = s/np.amax(np.abs(h))
+    gamma = h*slope
     gamma[h==0] = 0
     return gamma
 

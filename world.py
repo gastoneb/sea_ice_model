@@ -58,9 +58,9 @@ class Ocean(Model):
         self.dt = 1
         self.method = self.flux_sw_ener
         self.length_scale = 100000
-        self.eta_variance = 10
-        self.distribution = 'gaussian'
-        self.eta = gen_SRF(gen_covmatrix(self.dist,self.length_scale,self.eta_variance,self.distribution))
+        self.eta_variance = 100#10
+        self.shape = 'linear'#'gaussian'
+        self.eta = gen_srf_fft(gen_covmatrix(self.dist,self.length_scale,self.eta_variance,self.shape))
         self.eta_error_variance = 2
         self.flux_prev1 = np.zeros((3,self.Nx))
         self.flux_prev2 = np.zeros((3,self.Nx))
@@ -76,7 +76,8 @@ class Ocean(Model):
     def restart(self):
         self.u = self.u*0.
         self.v = self.v*0.
-        self.eta = gen_SRF(gen_covmatrix(self.dist,self.length_scale,self.eta_variance,'gaussian'))
+        self.eta = gen_srf_fft(self.grid,self.eta_variance,self.length_scale, 
+                #gen_covmatrix(self.dist,self.length_scale,self.eta_variance,self.shape))
         self.flux_prev1 = np.zeros((3,self.Nx))
         self.flux_prev2 = np.zeros((3,self.Nx))
 
@@ -118,7 +119,8 @@ class Atmosphere(Model):
         self.length_scale = 50000
         self.eta_variance = 1 
         self.eta_error_variance = 2
-        self.eta = gen_SRF(gen_covmatrix(self.dist,self.length_scale,self.eta_variance,'gaussian'))
+        self.shape = 'gaussian'
+        self.eta = gen_SRF(gen_covmatrix(self.dist,self.length_scale,self.eta_variance,self.shape))
         self.flux_prev1 = np.zeros((3,self.Nx))
         self.flux_prev2 = np.zeros((3,self.Nx))
         self.time_scaling = 0.25 #Slow down / speed up the dynamics
@@ -133,7 +135,7 @@ class Atmosphere(Model):
     def restart(self):
         self.u = self.u*0.
         self.v = self.v*0.
-        self.eta = gen_SRF(gen_covmatrix(self.dist,self.length_scale,self.eta_variance,'gaussian'))
+        self.eta = gen_SRF(gen_covmatrix(self.dist,self.length_scale,self.eta_variance,self.shape))
         self.flux_prev1 = np.zeros((3,self.Nx))
         self.flux_prev2 = np.zeros((3,self.Nx))
 
