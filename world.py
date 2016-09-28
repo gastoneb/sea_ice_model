@@ -33,7 +33,7 @@ class Model():
         self.dy = self.Ly/self.Ny
         self.f0 = 0.0
         self.t0 = 0
-        self.tf = 3600*24*10 # model will run for 10 days
+        self.tf = 3600*24*30 
         self.tp = 3600
         self.t = np.copy(self.t0)
         self.grid = np.linspace(-self.Lx,self.Lx-self.dx,self.Nx)
@@ -59,7 +59,8 @@ class Ocean(Model):
         self.method = self.flux_sw_ener
         self.length_scale = 100000
         self.eta_variance = 10
-        self.eta = gen_SRF(gen_covmatrix(self.dist,self.length_scale,self.eta_variance,'gaussian'))
+        self.distribution = 'gaussian'
+        self.eta = gen_SRF(gen_covmatrix(self.dist,self.length_scale,self.eta_variance,self.distribution))
         self.eta_error_variance = 2
         self.flux_prev1 = np.zeros((3,self.Nx))
         self.flux_prev2 = np.zeros((3,self.Nx))
@@ -166,7 +167,7 @@ class Ice(Model):
     def __init__(self):
         Model.__init__(self)
         print("Instantiating Ice Class")
-        self.dt = 3600*0.5
+        self.dt = 3600*0.1
         # Initial conditions
         self.u = np.zeros((self.Ny,self.Nx))
         self.v = np.zeros((self.Ny,self.Nx))
@@ -174,8 +175,8 @@ class Ice(Model):
         self.h = np.ones((self.Ny,self.Nx))*0.1
         # Parameters
         self.e = 2
-        self.Cw = 0.0055
-        self.Ca = 0.0012
+        self.Cw = 0.0055*1.0
+        self.Ca = 0.0012*1.0
         self.Ps = 5000
         self.C = 20
         self.eta = np.zeros((self.Ny,self.Nx))
@@ -198,12 +199,13 @@ class Ice(Model):
 
     # Construct A matrix of Ax=b
     def build_A(self,uw,ua,uprev):
+        visc = self.zeta*(1+self.e**(-2))
         # Compute coeffcients of A
-        cu1 = 1/(self.dx**2)*(self.zeta)
-        cu2 = (-1/(self.dx)**2*(np.roll(self.zeta,-1)+self.zeta)-
+        cu1 = 1/(self.dx**2)*(visc)
+        cu2 = (-1/(self.dx)**2*(np.roll(visc,-1)+visc)-
                 self.rhoi/2/self.dt*(np.roll(self.a*self.h,-1)+self.a*self.h)-
                 self.rhow*self.Cw/2*(self.a+np.roll(self.a,-1))*np.absolute(uw-uprev))
-        cu3 = 1/(self.dx**2)*(np.roll(self.zeta,-1))
+        cu3 = 1/(self.dx**2)*(np.roll(visc,-1))
 
         A = sparse.spdiags(np.vstack((np.roll(np.ravel(cu1).T,-1),np.ravel(cu2).T,np.roll(np.ravel(cu3).T,1))),[-1,0,1],self.Nx*self.Ny,self.Nx*self.Ny).todok()
         A[self.Nx*self.Ny-1,0]=cu1[0,0]
@@ -212,25 +214,27 @@ class Ice(Model):
 
     # Solve for x in Ax=b after setting up equations
     def solve_momentum_equations(self,uw,ua,uprev):
-        self.update_viscosities()
+        self.update_viscosities(uprev)
         b = self.build_b(uw,ua,uprev).T
         A = self.build_A(uw,ua,uprev)
         xprev = np.ravel(uprev)
         # Can use any sparse solver in np.linalg but directly solving the system of
         # equations turns out to be the fastest.
         x = sparse.linalg.spsolve(A,b)
+#        [x,junk] = sparse.linalg.cg(A,b,xprev,maxiter=500)
         self.u = np.reshape(x[0:self.Nx*self.Ny],(self.Ny,self.Nx))
 
     # Compute eta and zeta
-    def update_viscosities(self):
+    def update_viscosities(self,uprev):
         P = self.Ps*self.h*np.exp(-self.C*(1-self.a))
-        Delta = np.sqrt(((self.u-np.roll(self.u,1))/self.dx)**2*(1+self.e**(-2)))+1e-32
+        Delta = np.sqrt(((uprev-np.roll(uprev,1))/self.dx)**2*(1+self.e**(-2)))+1/1e20
         self.zeta = P/(2*Delta)
         # upper and lower bounds on viscosity
-        maxzeta=(P/4)*10**9
+        maxzeta=2.5*P*10**8
         minzeta=4*10**8
         self.zeta[self.zeta<minzeta] = minzeta
         self.zeta[self.zeta>maxzeta] = maxzeta[self.zeta>maxzeta]
+#        self.zeta = maxzeta*np.tanh(P/2/Delta/maxzeta)
 
       # Correct a and h for non-physical values
     def redistribution(self):
@@ -275,13 +279,13 @@ class Ice(Model):
 
     # March solution forward one time step
     def time_step(self,uw,u_atm):
-        ua = u_atm*75 #Multiply the wind velocity by some factor that makes it realistic.
+        ua = u_atm*150 #Multiply the wind velocity by some factor that makes it realistic.
         # Outer Loop
         uprev = np.copy(self.u)
         for i in range(0,self.n_outer_loops):
             # Inner Iterations
-            self.solve_momentum_equations(uw,ua,uprev)
             uprev = (self.u+uprev)/2
+            self.solve_momentum_equations(uw,ua,uprev)
         self.uprev = np.copy(self.u)
 
         # Compute thermodynamic growth/melt source terms
