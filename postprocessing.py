@@ -100,7 +100,7 @@ plt.show()
 
 # Compute temporal autocorrelation of ice velocity
 import statsmodels.graphics.tsaplots as tsaplots
-daily_10km_ui = change_time_scale(ui_10km,0.1,24)
+daily_10km_ui = change_time_scale(ui_10km,0.5,24)
 #ui_acf = tsaplots.plot_acf(daily_10km_ui[:,1], lags=20)
 import statsmodels.tsa.stattools as stattools
 acf=stattools.acf(daily_10km_ui[:,0])

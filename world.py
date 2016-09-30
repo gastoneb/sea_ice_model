@@ -179,8 +179,8 @@ class Ice(Model):
         self.h = np.ones((self.Ny,self.Nx))*0.1
         # Parameters
         self.e = 2
-        self.Cw = 0.0055*1.0
-        self.Ca = 0.0012*1.0
+        self.Cw =0.0055
+        self.Ca = 0.0012
         self.Ps = 5000
         self.C = 20
         self.eta = np.zeros((self.Ny,self.Nx))
@@ -192,7 +192,7 @@ class Ice(Model):
         self.s_h = np.zeros((self.Ny,self.Nx))
         self.s_a = np.zeros((self.Ny,self.Nx))
         self.uprev = np.copy(self.u)
-        self.growth_scaling = np.ones(self.h.shape)
+        self.growth_scaling = np.ones(self.h.shape)*0.0
         self.growth_scaling_bias = 0.0
         # Forcing error terms
         self.ua_shift = 0
@@ -202,8 +202,9 @@ class Ice(Model):
 
         # Error standard deviations
         self.parameter_err_std = 0.1
-        self.ua_shift_std = 5000
-        self.uw_shift_std = 5000
+        self.ua_shift_std = 10000/self.dx
+        self.uw_shift_std = 10000/self.dx
+        self.growth_err_std = 0.1
 
     def perturb_parameters(self):
         self.Cw *= (1+np.random.normal(0,self.parameter_err_std))

@@ -34,7 +34,11 @@ def main():
     ice_restart.u = np.load('u.npy')
     ice_restart.h = np.load('h.npy')*0.3
     ice_restart.a = np.load('a.npy')*0.9
-    
+    ice_restart.a = 0.75+gen_srf_fft(ice_restart.grid,0.025,100000,'exponential')
+    ice_restart.a[ice_restart.a>1] = 1.0
+    ice_restart.a[ice_restart.a<0] = 0.1
+
+
     ice = []
     n_models = 20
     for i in range(0,n_models):
@@ -96,7 +100,7 @@ def main():
         if t % tp ==0:
             figure_update(ice[0].plot_bool,ocean.u,atm.u,ice_mean_u,ice_mean_a,ice_mean_h,t)
         if t % (24*3600) == 0:
-            growth_scaling = np.random.uniform(-0.2,0.5)
+            growth_scaling = np.random.uniform(-0.2,0.2)
             for i in range(0,n_models):
                 ice[i].growth_scaling = growth_scaling + np.random.normal(0,ice[i].growth_err_std)
             print("ice growth scaling set to "+str(growth_scaling))
@@ -116,7 +120,8 @@ def main():
     np.save('results/u_hist.npy', u_hist)
     np.save('results/uw_hist.npy', uw_hist)
     np.save('results/ua_hist.npy', ua_hist)
-
+    np.save('results/h_hist.npy', h_hist)
+    np.save('results/a_hist.npy', a_hist)
 
 ###############################################################################
 # Run the program
