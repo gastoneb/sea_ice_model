@@ -79,24 +79,45 @@ dudx = np.ravel((ui_10km-np.roll(ui_10km,1,axis=1)))*3.6*24
 [hist, bin_edges] = np.histogram(dudx,nbins)
 hist = hist/dudx.size
 bin_centres = 0.5*(bin_edges[0:nbins]+bin_edges[1:nbins+1])
-
 abs_dudx = np.ravel(np.abs((ui_10km-np.roll(ui_10km,1,axis=1))*3.6*24))
 log_abs_dudx = np.log10(abs_dudx)
 nbins=50
 [hist, bin_edges] = np.histogram(log_abs_dudx,nbins)
 log_bin_centres = 0.5*(bin_edges[0:nbins]+bin_edges[1:nbins+1])
 bin_centres = 10**(log_bin_centres)
+hist = np.array(hist)*1.0
+for i in range(0,len(hist)):
+    hist[i] = float(hist[i])/len(dudx)
+
 plt.scatter(bin_centres,hist)
 plt.plot(bin_centres,hist)
 plt.xscale('log')
 plt.yscale('log')
 plt.xlim([10**(-2),10])
-plt.ylim([10**1,10**5])
+plt.ylim([10**(-5),10**0])
 plt.xlabel("Divergence Rate (1/day)")
 plt.ylabel("Frequency")
 plt.grid(which='major')
 plt.tight_layout()
 plt.show()
+
+
+# diverence rate plot but not on a log-scale
+nbins=600
+[hist, bin_edges] = np.histogram(dudx,nbins)
+hist = hist/dudx.size
+bin_centres = 0.5*(bin_edges[0:nbins]+bin_edges[1:nbins+1])
+abs_dudx = np.ravel(np.abs((ui_10km-np.roll(ui_10km,1,axis=1))*3.6*24))
+plt.scatter(bin_centres,hist)
+plt.plot(bin_centres,hist)
+plt.yscale('log')
+plt.xlim((-0.4,0.4))
+plt.xlabel("Divergence Rate (1/day)")
+plt.ylabel("Frequency")
+plt.grid(which='major')
+plt.tight_layout()
+plt.show()
+nbins=50
 
 # Compute temporal autocorrelation of ice velocity
 import statsmodels.graphics.tsaplots as tsaplots
