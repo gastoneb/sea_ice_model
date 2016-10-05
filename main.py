@@ -33,7 +33,7 @@ def main():
     # You can define the initial conditions here if you have a saved state
     ice.u = np.load('u.npy')
     ice.h = np.load('h.npy')*0.3
-    ice.a = np.load('a.npy')*0.9
+    ice.a = np.load('a.npy')*0.5
 
     # Want to save hourly state
     u_hist = np.copy(ice.u)
@@ -44,8 +44,8 @@ def main():
 
     print(ice.dx)
     # Change some parameters
-    ice.growth_scaling = 0.225
-    ocean.length_scale = 10000
+    ice.growth_scaling = 0.0
+    ocean.length_scale = 25000
     ocean.time_scaling = 0.05
     atm.length_scale = 10000
     atm.time_scaling = 0.1
@@ -72,7 +72,11 @@ def main():
             atm.time_step()
         if t % ice.dt == 0:
             print('Ice time step at t = '+str(t/3600)+' hours')
+            h_err = np.random.normal(0,0.001,ice.h.shape)
+            a_err = np.random.normal(0,0.001,ice.a.shape)
             ice.time_step(np.copy(ocean.u),np.copy(atm.u))
+            ice.h += h_err
+            ice.a += a_err
             u_hist = np.vstack([u_hist,ice.u])
             ua_hist = np.vstack([ua_hist,atm.u])
             uw_hist = np.vstack([uw_hist,ocean.u])
@@ -81,7 +85,7 @@ def main():
         if t % tp ==0:
             figure_update(ice.plot_bool,ocean.u,atm.u,ice.u,ice.a,ice.h,t)
         if t % (24*3600) == 0:
-             ice.growth_scaling = np.random.uniform(-0.2,0.5)
+             ice.growth_scaling = np.random.uniform(-0.00,0.00)
 #             ice.growth_scaling = np.random.uniform(-0.2,0.2)
              print("ice growth scaling set to "+str(ice.growth_scaling))
 #        if t % (15*24*3600) == 0:
