@@ -72,16 +72,7 @@ def main():
             atm.time_step()
         if t % ice.dt == 0:
             print('Ice time step at t = '+str(t/3600)+' hours')
-            h_err = np.random.normal(0,0.001,ice.h.shape)
-            a_err = np.random.normal(0,0.001,ice.a.shape)
             ice.time_step(np.copy(ocean.u),np.copy(atm.u))
-            ice.h += h_err
-            ice.a += a_err
-            u_hist = np.vstack([u_hist,ice.u])
-            ua_hist = np.vstack([ua_hist,atm.u])
-            uw_hist = np.vstack([uw_hist,ocean.u])
-            a_hist = np.vstack([a_hist,ice.a])
-            h_hist = np.vstack([h_hist,ice.h])
         if t % tp ==0:
             figure_update(ice.plot_bool,ocean.u,atm.u,ice.u,ice.a,ice.h,t)
         if t % (24*3600) == 0:
@@ -99,12 +90,6 @@ def main():
     np.save('results/u.npy', ice.u)
     np.save('results/a.npy', ice.a)
     np.save('results/h.npy', ice.h)
-    np.save('results/u_hist.npy', u_hist)
-    np.save('results/uw_hist.npy', uw_hist)
-    np.save('results/ua_hist.npy', ua_hist)
-    np.save('results/a_hist.npy', a_hist)
-    np.save('results/h_hist.npy', h_hist)
-
 
 ###############################################################################
 # Run the program
