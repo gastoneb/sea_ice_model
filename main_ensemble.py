@@ -33,14 +33,10 @@ def main():
     # You can define the initial conditions here if you have a saved state
     ice_restart.u = np.load('u.npy')
     ice_restart.h = np.load('h.npy')*0.3
-    ice_restart.a = np.load('a.npy')*0.9
-    ice_restart.a = 0.8+gen_srf_fft(ice_restart.grid,0.025,100000,'exponential')
-    ice_restart.a[ice_restart.a>1] = 1.0
-    ice_restart.a[ice_restart.a<0] = 0.1
-
+    ice_restart.a = np.load('a.npy')*0.5
 
     ice = []
-    n_models = 100
+    n_models = 500
     for i in range(0,n_models):
         ice.append(Ice())
         ice[i].perturb_parameters()
@@ -56,11 +52,11 @@ def main():
     h_hist = np.copy(ice_restart.h)
 
     # Change some parameters
-    ocean.length_scale = 10000
-    ocean.time_scaling = 0.1
+    ocean.length_scale = 25000
+    ocean.time_scaling = 0.05
     atm.length_scale = 10000
     atm.time_scaling = 0.1
-    tf = 24*3600*30
+    tf = 24*3600*14
     ocean.restart()
     atm.restart()
 
@@ -87,8 +83,8 @@ def main():
             ice_mean_h = np.zeros(ice[i].h.shape)
             ice_mean_a = np.zeros(ice[i].h.shape)
             ice_mean_u = np.zeros(ice[i].h.shape)
-            err_h = np.random.normal(0,0.01,ice[i].h.size).reshape(ice[i].h.shape)
-            err_a = np.random.normal(0,0.01,ice[i].a.size).reshape(ice[i].a.shape)
+            err_h = np.random.normal(0,0.001,ice[i].h.size).reshape(ice[i].h.shape)
+            err_a = np.random.normal(0,0.001,ice[i].a.size).reshape(ice[i].a.shape)
             for i in range(0,n_models):
                 ice[i].time_step(np.copy(ocean.u), np.copy(atm.u))
 
