@@ -56,7 +56,7 @@ plt.subplot(5,1,2).set_title("Wind velocity (m/s)")
 plt.plot(ua[t,:].T*75,'-b',linewidth=1, label='Wind Velocity') #multiplied by a constant
 plt.tick_params(labelbottom="off")
 #plt.title('Wind velocity (m/s)',y=0.7,x=0.8)
-plt.ylim(-12,12)
+#plt.ylim(-12,12)
 plt.subplot(5,1,3).set_title('Ice velocity (m/s)')
 plt.plot(ui[t,:].T,'-r',linewidth=1, label='Ice velocity')
 plt.tick_params(labelbottom="off")
@@ -66,10 +66,10 @@ plt.plot(h[t,:].T,'-r', linewidth=1, label='Ice thickness')
 plt.tick_params(labelbottom="off")
 plt.subplot(5,1,5).set_title("Ice concentration (0-1)")
 plt.plot(a[t,:].T,'-r', linewidth=1, label='Ice concentration')
-plt.ylim(0.5,1.0)
+plt.ylim(0.0,1.0)
 plt.show(block=False)
 plt.xlabel('Distance (km)')
-plt.tight_layout()
+#plt.tight_layout()
 plt.show()
 
 
@@ -77,7 +77,7 @@ plt.show()
 nbins=50
 ui_10km = change_length_scale(ui,10)
 #dudx = np.ravel((ui_10km-np.roll(ui_10km,1,axis=1)))*3.6*24
-dudx = np.ravel((ui-np.roll(ui,1,axis=1)))*3.6*24*10
+dudx = np.ravel((ui-np.roll(ui,1,axis=1)))*3.6*24#*10
 [hist, bin_edges] = np.histogram(dudx,nbins)
 hist = hist/dudx.size
 bin_centres = 0.5*(bin_edges[0:nbins]+bin_edges[1:nbins+1])
@@ -95,7 +95,7 @@ plt.scatter(bin_centres,hist)
 plt.plot(bin_centres,hist)
 plt.xscale('log')
 plt.yscale('log')
-plt.xlim([10**(-2),10])
+#plt.xlim([10**(-2),10])
 plt.ylim([10**(-5),10**0])
 plt.xlabel("Divergence Rate (1/day)")
 plt.ylabel("Frequency")
