@@ -48,59 +48,83 @@ plt.show()
 # Plot the state at an intermediate timestep. 
 t=1000
 plt.subplot(5,1,1)
-plt.plot(uo[t,:].T,'-b',linewidth=2, label='Ocean velocity')
+plt.plot(uo[t,:].T,'-b',linewidth=1, label='Ocean velocity')
 plt.tick_params(labelbottom="off")
 plt.subplot(5,1,1).set_title('Ocean velocity (m/s)')#,y=0.69,x=0.8,backgroundcolor="white")
 plt.ylim(-0.3,0.3)
 plt.subplot(5,1,2).set_title("Wind velocity (m/s)")
-plt.plot(ua[t,:].T*75,'-b',linewidth=2, label='Wind Velocity') #multiplied by a constant
+plt.plot(ua[t,:].T*75,'-b',linewidth=1, label='Wind Velocity') #multiplied by a constant
 plt.tick_params(labelbottom="off")
 #plt.title('Wind velocity (m/s)',y=0.7,x=0.8)
-plt.ylim(-12,12)
+#plt.ylim(-12,12)
 plt.subplot(5,1,3).set_title('Ice velocity (m/s)')
-plt.plot(ui[t,:].T,'-r',linewidth=2, label='Ice velocity')
+plt.plot(ui[t,:].T,'-r',linewidth=1, label='Ice velocity')
 plt.tick_params(labelbottom="off")
 #plt.ylim([-0.025,0.025])
 plt.subplot(5,1,4).set_title("Thickness (m)")
-plt.plot(h[t,:].T,'-r', linewidth=2, label='Ice thickness')
+plt.plot(h[t,:].T,'-r', linewidth=1, label='Ice thickness')
 plt.tick_params(labelbottom="off")
 plt.subplot(5,1,5).set_title("Ice concentration (0-1)")
-plt.plot(a[t,:].T,'-r', linewidth=2, label='Ice concentration')
+plt.plot(a[t,:].T,'-r', linewidth=1, label='Ice concentration')
+plt.ylim(0.0,1.0)
 plt.show(block=False)
 plt.xlabel('Distance (km)')
-plt.tight_layout()
+#plt.tight_layout()
 plt.show()
 
 
 # Compute the histogram of absolute divergence, du/dx (1/day) on a 10km grid
 nbins=50
 ui_10km = change_length_scale(ui,10)
-dudx = np.ravel((ui_10km-np.roll(ui_10km,1,axis=1)))*3.6*24
+#dudx = np.ravel((ui_10km-np.roll(ui_10km,1,axis=1)))*3.6*24
+dudx = np.ravel((ui-np.roll(ui,1,axis=1)))*3.6*24#*10
 [hist, bin_edges] = np.histogram(dudx,nbins)
 hist = hist/dudx.size
 bin_centres = 0.5*(bin_edges[0:nbins]+bin_edges[1:nbins+1])
-
 abs_dudx = np.ravel(np.abs((ui_10km-np.roll(ui_10km,1,axis=1))*3.6*24))
 log_abs_dudx = np.log10(abs_dudx)
 nbins=50
 [hist, bin_edges] = np.histogram(log_abs_dudx,nbins)
 log_bin_centres = 0.5*(bin_edges[0:nbins]+bin_edges[1:nbins+1])
 bin_centres = 10**(log_bin_centres)
+hist = np.array(hist)*1.0
+for i in range(0,len(hist)):
+    hist[i] = float(hist[i])/len(dudx)
+
 plt.scatter(bin_centres,hist)
 plt.plot(bin_centres,hist)
 plt.xscale('log')
 plt.yscale('log')
-plt.xlim([10**(-2),10])
-plt.ylim([10**1,10**5])
+#plt.xlim([10**(-2),10])
+plt.ylim([10**(-5),10**0])
 plt.xlabel("Divergence Rate (1/day)")
 plt.ylabel("Frequency")
 plt.grid(which='major')
 plt.tight_layout()
 plt.show()
 
+
+# diverence rate plot but not on a log-scale
+nbins=600
+[hist, bin_edges] = np.histogram(dudx,nbins)
+hist = hist/dudx.size
+bin_centres = 0.5*(bin_edges[0:nbins]+bin_edges[1:nbins+1])
+abs_dudx = np.ravel(np.abs((ui_10km-np.roll(ui_10km,1,axis=1))*3.6*24))
+plt.scatter(bin_centres,hist)
+plt.plot(bin_centres,hist)
+plt.yscale('log')
+plt.xlim((-0.4,0.4))
+plt.ylim((1/10e3,1))
+plt.xlabel("Divergence Rate (1/day)")
+plt.ylabel("Frequency")
+plt.grid(which='major')
+plt.tight_layout()
+plt.show()
+nbins=50
+
 # Compute temporal autocorrelation of ice velocity
 import statsmodels.graphics.tsaplots as tsaplots
-daily_10km_ui = change_time_scale(ui_10km,0.1,24)
+daily_10km_ui = change_time_scale(ui_10km,0.5,24)
 #ui_acf = tsaplots.plot_acf(daily_10km_ui[:,1], lags=20)
 import statsmodels.tsa.stattools as stattools
 acf=stattools.acf(daily_10km_ui[:,0])
@@ -167,16 +191,17 @@ plt.show()
 
 
 # Create spatial ACF of ice thickness
+h_mean = h[0,:]
 #tsaplots.plot_acf(h[h.shape[0]-1,:],lags=300)
-acf = stattools.acf(h[0,:],nlags=300)*0
-for i in range(0,1300):
-    acf_i = stattools.acf(h[i,:],nlags=300)
-    acf += acf_i/1300
+acf = stattools.acf(h_mean,nlags=500)
+#for i in range(0,1300):
+#    acf_i = stattools.acf(h[i,:],nlags=500)
+#    acf += acf_i/1300
 plt.plot(acf)
 plt.xlabel("Distance Lag (km)")
 plt.ylabel("Autocorrelation")
 plt.grid(which="major")
-plt.xlim([0,300])
+plt.xlim([0,500])
 plt.axhline(y=0, color='black')
 plt.ylim([-0.3,1])
 plt.show()

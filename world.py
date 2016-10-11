@@ -59,8 +59,9 @@ class Ocean(Model):
         self.method = self.flux_sw_ener
         self.length_scale = 100000
         self.eta_variance = 10
-        self.distribution = 'gaussian'
-        self.eta = gen_SRF(gen_covmatrix(self.dist,self.length_scale,self.eta_variance,self.distribution))
+        self.shape = 'gaussian'
+        self.eta = gen_srf_fft(self.grid,self.eta_variance,self.length_scale,self.shape)
+#        self.eta = gen_srf_fft(gen_covmatrix(self.dist,self.length_scale,self.eta_variance,self.shape))
         self.eta_error_variance = 2
         self.flux_prev1 = np.zeros((3,self.Nx))
         self.flux_prev2 = np.zeros((3,self.Nx))
@@ -76,7 +77,8 @@ class Ocean(Model):
     def restart(self):
         self.u = self.u*0.
         self.v = self.v*0.
-        self.eta = gen_SRF(gen_covmatrix(self.dist,self.length_scale,self.eta_variance,'gaussian'))
+        self.eta = gen_srf_fft(self.grid,self.eta_variance,self.length_scale,self.shape)
+                #gen_covmatrix(self.dist,self.length_scale,self.eta_variance,self.shape))
         self.flux_prev1 = np.zeros((3,self.Nx))
         self.flux_prev2 = np.zeros((3,self.Nx))
 
@@ -118,7 +120,9 @@ class Atmosphere(Model):
         self.length_scale = 50000
         self.eta_variance = 1 
         self.eta_error_variance = 2
-        self.eta = gen_SRF(gen_covmatrix(self.dist,self.length_scale,self.eta_variance,'gaussian'))
+        self.shape = 'gaussian'
+#        self.eta = gen_SRF(gen_covmatrix(self.dist,self.length_scale,self.eta_variance,self.shape))
+        self.eta = gen_srf_fft(self.grid,self.eta_variance,self.length_scale,self.shape)
         self.flux_prev1 = np.zeros((3,self.Nx))
         self.flux_prev2 = np.zeros((3,self.Nx))
         self.time_scaling = 0.25 #Slow down / speed up the dynamics
@@ -133,7 +137,7 @@ class Atmosphere(Model):
     def restart(self):
         self.u = self.u*0.
         self.v = self.v*0.
-        self.eta = gen_SRF(gen_covmatrix(self.dist,self.length_scale,self.eta_variance,'gaussian'))
+        self.eta = gen_SRF(gen_covmatrix(self.dist,self.length_scale,self.eta_variance,self.shape))
         self.flux_prev1 = np.zeros((3,self.Nx))
         self.flux_prev2 = np.zeros((3,self.Nx))
 
@@ -167,7 +171,7 @@ class Ice(Model):
     def __init__(self):
         Model.__init__(self)
         print("Instantiating Ice Class")
-        self.dt = 3600*0.1
+        self.dt = 3600*0.5
         # Initial conditions
         self.u = np.zeros((self.Ny,self.Nx))
         self.v = np.zeros((self.Ny,self.Nx))
@@ -175,9 +179,9 @@ class Ice(Model):
         self.h = np.ones((self.Ny,self.Nx))*0.1
         # Parameters
         self.e = 2
-        self.Cw = 0.0055*1.0
-        self.Ca = 0.0012*1.0
-        self.Ps = 5000
+        self.Cw =0.0055
+        self.Ca = 0.0012
+        self.Ps = 30000
         self.C = 20
         self.eta = np.zeros((self.Ny,self.Nx))
         self.zeta = np.zeros((self.Ny,self.Nx))
@@ -188,7 +192,30 @@ class Ice(Model):
         self.s_h = np.zeros((self.Ny,self.Nx))
         self.s_a = np.zeros((self.Ny,self.Nx))
         self.uprev = np.copy(self.u)
-        self.growth_scaling = np.ones(self.h.shape)
+        self.growth_scaling = np.ones(self.h.shape)*0.0
+        self.growth_scaling_bias = 0.0
+        # Forcing error terms
+        self.ua_shift = 0
+        self.ua_factor = 1.0
+        self.uw_shift = 0
+        self.uw_factor = 1.0
+
+        # Error standard deviations
+        self.parameter_err_std = 0.1
+        self.ua_shift_std = 10000/self.dx
+        self.uw_shift_std = 10000/self.dx
+        self.growth_err_std = 0.1
+
+    def perturb_parameters(self):
+        self.Cw *= (1+np.random.normal(0,self.parameter_err_std))
+        self.Ca *= (1+np.random.normal(0,self.parameter_err_std))
+        self.Ps *= (1+np.random.normal(0,self.parameter_err_std))
+        self.rhoi *= (1+np.random.normal(0,self.parameter_err_std))
+        self.growth_scaling_bias = np.random.normal(0,self.parameter_err_std)
+        self.uw_shift = int(np.random.normal(0,self.uw_shift_std))
+        self.ua_shift = int(np.random.normal(0,self.ua_shift_std))
+        self.uw_factor = np.random.normal(1,self.parameter_err_std)
+        self.ua_factor = np.random.normal(1,self.parameter_err_std)
 
     # Construct b column vector of Ax=b
     def build_b(self,uw,ua,uprev):
@@ -275,11 +302,19 @@ class Ice(Model):
             r,s,a = 3,-0.01,-0.015
         a  = a*np.ones(h.shape)
         g = (a+(s-a)*(1.-1*np.exp(-3*h**1/r**1)))/24/60/60
-        return g*self.growth_scaling
+        return g*(self.growth_scaling+self.growth_scaling_bias)
 
     # March solution forward one time step
     def time_step(self,uw,u_atm):
-        ua = u_atm*150 #Multiply the wind velocity by some factor that makes it realistic.
+        ua = u_atm*150 #Multiply the wind velocity by some factor that makes it realistic.i
+
+        # Perturb the forcing velocities
+        u_atm *= self.ua_factor
+        u_atm = np.roll(u_atm,self.ua_shift,axis=1)
+        uw *= self.uw_factor
+        uw = np.roll(uw,self.uw_shift,axis=1)
+
+
         # Outer Loop
         uprev = np.copy(self.u)
         for i in range(0,self.n_outer_loops):
